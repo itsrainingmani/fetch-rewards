@@ -25,9 +25,9 @@ receipt_mm_market = {
     "purchaseTime": "14:33",
     "items": [
         {"shortDescription": "Gatorade", "price": "2.25"},
-        {"shortDescription": "Gatorade", "price": "2.25"},
-        {"shortDescription": "Gatorade", "price": "2.25"},
-        {"shortDescription": "Gatorade", "price": "2.25"},
+        {"shortDescription": "gatorade", "price": "2.25"},
+        {"shortDescription": "Matorade", "price": "2.25"},
+        {"shortDescription": " Gatorade", "price": "2.25"},
     ],
     "total": "9.00",
 }
@@ -42,7 +42,7 @@ def test_points_one():
 def test_points_two():
 
     receipt2 = Receipt(**receipt_mm_market)
-    assert calculate_points(receipt2) == 109
+    assert calculate_points(receipt2) == 139
 
 
 def test_read_points_no_receipt():
@@ -72,7 +72,7 @@ def test_process_valid_receipt2_and_points():
 
     response = client.get(f"/receipts/{receipt_id}/points")
     assert response.status_code == 200
-    assert response.json() == {"points": 109}
+    assert response.json() == {"points": 139}
 
 
 # New test receipt with edge cases

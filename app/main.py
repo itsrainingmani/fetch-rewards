@@ -1,7 +1,8 @@
 import datetime
 from math import ceil
-from typing import Annotated, List
+from typing import Annotated, Any, List
 from uuid import uuid4
+import hashlib
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
@@ -12,6 +13,37 @@ app = FastAPI()
 
 # in memory dictionary of receipt IDs to the calculated points
 receipt_points: dict[str, int] = {}
+
+receipt_cache: dict[str, bool] = {}
+
+
+def hash_json(data: Any) -> str:
+    def hasher(value: Any):
+        if type(value) is list:
+            # hash each item within the list
+            for item in value:
+                hasher(item)
+
+            return
+
+        if type(value) is dict:
+            # work over each property in the dictionary, using a sorted order
+            for item_key in sorted(value.keys()):
+                # hash both the property key and the value
+                hash.update(item_key.encode())
+                hasher(value[item_key])
+
+            return
+
+        if type(value) is not str:
+            value = str(value)
+
+        hash.update(value.encode())
+
+    # create new hash, walk given data and return result
+    hash = hashlib.sha1()
+    hasher(data)
+    return hash.hexdigest()
 
 
 class Item(BaseModel):
@@ -55,6 +87,10 @@ class Receipt(BaseModel):
     def total_float(self) -> float:
         return float(self.total)
 
+    @property
+    def calculate_hash(self) -> str:
+        return hash_json(self.model_dump_json())
+
 
 def calculate_points(receipt: Receipt) -> int:
     points = 0
@@ -75,6 +111,9 @@ def calculate_points(receipt: Receipt) -> int:
     for item in receipt.items:
         if len(item.shortDescription) % 3 == 0:
             points += ceil(item.price_float * 0.2)
+
+        if item.shortDescription.lower().startswith("g"):
+            points += 10
 
     # 6 points if the day in the purchase date is odd.
     points += 6 if receipt.purchaseDate.day % 2 == 1 else 0
@@ -98,7 +137,12 @@ def read_root():
 
 @app.post("/receipts/process")
 async def process_receipt(receipt: Receipt):
+    receipt_hash = receipt.calculate_hash
+    if receipt_hash in receipt_cache:
+        raise HTTPException(status_code=400, detail="Duplicate Receipt entered")
+
     points = calculate_points(receipt)
+    receipt_cache[receipt_hash] = True
     receipt_id = str(uuid4())
 
     receipt_points[receipt_id] = points
