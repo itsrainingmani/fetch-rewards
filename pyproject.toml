@@ -5,7 +5,11 @@ version = "0.1.0"
 description = "Receipt Processor Implementation"
 readme = "README.md"
 requires-python = ">=3.12"
-dependencies = ["fastapi[standard]>=0.115.5"]
+dependencies = [
+    "aiohttp>=3.11.12",
+    "fastapi[standard]>=0.115.5",
+    "requests>=2.32.3",
+]
 
 [project.optional-dependencies]
 dev = ["pytest>=8.3.4", "httpx>=0.28.0"]
